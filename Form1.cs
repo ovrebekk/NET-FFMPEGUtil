@@ -17,9 +17,10 @@ namespace FfmpegUtil
 {
     public partial class Form1 : Form
     {
-        string[] resolutionOptions = new string[] { "720p", "1080p", "2560x1600", "4K", "Custom" };
+        string[] resolutionOptions = new string[] { "720p", "1080p", "2560x1440", "2560x1600", "4K", "Custom" };
         string homeDirectory;
         string[] fileList;
+        string[] selectedFileList = null;
         string timelapseFileListPrefix;
         string timelapseFileListStartIndex;
         int sourceDimX = 3000;
@@ -101,10 +102,23 @@ namespace FfmpegUtil
             decodeFirstImageMetaData();
         }
 
+        public void resetProjectFileList()
+        {
+            labelFolder.Text = "File list";
+            fileList = selectedFileList;
+            //List<String> fileList2 = new List<string>(fileList);
+            //fileList2 = fileList2.OrderBy(q => q).ToList();
+            //fileList = fileList2.ToArray();
+            decodeFileList();
+            labelNumFiles.Text = selectedFileList.Length.ToString();
+            labelStartNum.Text = "";
+            decodeFirstImageMetaData();
+        }
+
         public FileInfo decodeFile(string file)
         {
             FileInfo currentFileInfo = new FileInfo();
-            if (Path.GetExtension(file) == ".jpg")
+            if (Path.GetExtension(file) == ".jpg" || Path.GetExtension(file) == ".JPG")
             {
                 currentFileInfo.ValidFile = true;
                 currentFileInfo.FileName = Path.GetFileName(file);
@@ -244,13 +258,47 @@ namespace FfmpegUtil
                     fileNameScaleCropPostfix = "";
                     break;
             }
-            string fileName = timelapseFileListPrefix + "_" + timelapseFileListStartIndex + "_interval" + fileNameResPostfix + fileNameScaleCropPostfix + ".mp4";
+            string fileName;
             string command = "ffmpeg";
             command += " -r " + numericUpDown1.Value.ToString();
-            command += " -start_number " + timelapseFileListStartIndex;
-            command += " -i " + "\"" + homeDirectory + "\\" + timelapseFileListPrefix + "_%04d.jpg\"";
+
+            if(selectedFileList != null && selectedFileList.Length > 0)
+            {
+                // If the selected file list contains anything, use 'random file name' mode, and save a file list to use as input for ffmpeg
+
+                string inputFileName = "ffmpeg_input.txt";
+
+                // Delete file if it already exists
+                if (File.Exists(inputFileName))
+                {
+                    File.Delete(inputFileName);
+                }
+
+                // Create file list file
+                using (StreamWriter fileWriter = new StreamWriter(inputFileName))
+                {
+                    foreach (string fName in selectedFileList)
+                    {
+                        fileWriter.WriteLine("file '" + fName + "'");
+                    }
+                }
+
+                // Configure ffmpeg to use the file list
+                command += " -f concat -safe 0 -i " + inputFileName;
+
+                fileName = "filelist" + "_interval" + fileNameResPostfix + fileNameScaleCropPostfix + ".mp4";
+            }
+            else
+            {
+                // Use the default mode, where the file names are expected to follow Nikon standard naming convention
+                command += " -start_number " + timelapseFileListStartIndex;
+                command += " -i " + "\"" + homeDirectory + "\\" + timelapseFileListPrefix + "_%04d.jpg\"";
+                fileName = timelapseFileListPrefix + "_" + timelapseFileListStartIndex + "_interval" + fileNameResPostfix + fileNameScaleCropPostfix + ".mp4";
+            }
+
             // Change pixel format to allow importing into premiere
             command += " -pix_fmt yuv420p";
+
             // Video filters
             bool videoFiltersUsed = false;
             if (cropW > 0 || cropH > 0)
@@ -322,12 +370,31 @@ namespace FfmpegUtil
             }
         }
 
+        private void comboBoxScaleCrop_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            openFileDialog1.ShowDialog();
+            selectedFileList = openFileDialog1.FileNames;
+            resetProjectFileList();
+            logMessage(selectedFileList.Length + " files loaded");
+        }
+
         private void buttonLoadDirectory_Click(object sender, EventArgs e)
         {
             DialogResult result = folderBrowserDialog1.ShowDialog();
             if(result == DialogResult.OK)
             {
                 resetProject(folderBrowserDialog1.SelectedPath);
+                selectedFileList = null;
             }
         }
 
@@ -348,15 +415,20 @@ namespace FfmpegUtil
                     break;
                 case 2:
                     resX = 2560;
+                    resY = 1440;
+                    fileNameResPostfix = "_1440p";
+                    break;
+                case 3:
+                    resX = 2560;
                     resY = 1600;
                     fileNameResPostfix = "_1600p";
                     break;
-                case 3:
+                case 4:
                     resX = 3840;
                     resY = 2160;
                     fileNameResPostfix = "_4k";
                     break;
-                case 4:
+                case 5:
                     customTextBoxesEnabled = true;
                     fileNameResPostfix = "";
                     break;
