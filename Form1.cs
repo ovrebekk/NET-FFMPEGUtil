@@ -106,7 +106,11 @@ namespace FfmpegUtil
         public void resetProjectFileList()
         {
             labelFolder.Text = "File list";
-            fileList = selectedFileList;
+            if (selectedFileList != null)
+            {
+                fileList = selectedFileList;
+            }
+            else if(selectedDirectoryList != null)
             //List<String> fileList2 = new List<string>(fileList);
             //fileList2 = fileList2.OrderBy(q => q).ToList();
             //fileList = fileList2.ToArray();
@@ -196,11 +200,16 @@ namespace FfmpegUtil
             }
         }
 
+        float sourceAspect;
+        float targetAspect;
+        int cropW = 0, cropH = 0, cropX = 0, cropY = 0;
+
         private void buttonGenerateVideo_Click(object sender, EventArgs e)
         {
-            float sourceAspect = (float)sourceDimX / (float)sourceDimY;
-            float targetAspect = (float)resX / (float)resY;
-            int cropW = 0, cropH = 0, cropX = 0, cropY = 0;
+            sourceAspect = (float)sourceDimX / (float)sourceDimY;
+            targetAspect = (float)resX / (float)resY;
+            cropW = 0;
+            cropH = 0;
             switch(comboBoxScaleCrop.SelectedIndex)
             {
                 // Scale to fit within
@@ -260,88 +269,96 @@ namespace FfmpegUtil
                     break;
             }
 
-
-            foreach (string directory in selectedDirectoryList)
+            if (selectedDirectoryList != null)
             {
-                string fileName;
-                string command = "ffmpeg";
-                command += " -r " + numericUpDown1.Value.ToString();
-                selectedFileList = System.IO.Directory.GetFiles(directory, "*.jpg");
-
-
-                if (selectedFileList != null && selectedFileList.Length > 0)
+                foreach (string directory in selectedDirectoryList)
                 {
-                    // If the selected file list contains anything, use 'random file name' mode, and save a file list to use as input for ffmpeg
+                    prepareFfmpegCommand(directory, null, true);
+                }
+            }
+            else prepareFfmpegCommand(null, selectedFileList, false);
+        }
 
-                    string inputFileName = "ffmpeg_input.txt";
+        public void prepareFfmpegCommand(string fileDirectory, string [] fileList, bool waitForExit)
+        { 
+            string fileName;
+            string command = "ffmpeg";
+            command += " -r " + numericUpDown1.Value.ToString();
+            if (fileList != null) selectedFileList = fileList;
+            else selectedFileList = System.IO.Directory.GetFiles(fileDirectory, "*.jpg");
+            if (fileDirectory == null) fileDirectory = Path.GetDirectoryName(fileList[0]);
+            if (selectedFileList != null && selectedFileList.Length > 0)
+            {
+                // If the selected file list contains anything, use 'random file name' mode, and save a file list to use as input for ffmpeg
 
-                    // Delete file if it already exists
-                    if (File.Exists(inputFileName))
+                string inputFileName = "ffmpeg_input.txt";
+
+                // Delete file if it already exists
+                if (File.Exists(inputFileName))
+                {
+                    File.Delete(inputFileName);
+                }
+
+                // Create file list file
+                using (StreamWriter fileWriter = new StreamWriter(inputFileName))
+                {
+                    foreach (string fName in selectedFileList)
                     {
-                        File.Delete(inputFileName);
+                        fileWriter.WriteLine("file '" + fName + "'");
                     }
+                }
 
-                    // Create file list file
-                    using (StreamWriter fileWriter = new StreamWriter(inputFileName))
-                    {
-                        foreach (string fName in selectedFileList)
-                        {
-                            fileWriter.WriteLine("file '" + fName + "'");
-                        }
-                    }
+                // Configure ffmpeg to use the file list
+                command += " -f concat -safe 0 -i " + inputFileName;
+                string filePrefix = Path.GetFileNameWithoutExtension(selectedFileList[0]);
 
-                    // Configure ffmpeg to use the file list
-                    command += " -f concat -safe 0 -i " + inputFileName;
-                    string filePrefix = Path.GetFileNameWithoutExtension(selectedFileList[0]);
+                fileName = fileDirectory + "\\" + filePrefix + "_int" + fileNameResPostfix + fileNameScaleCropPostfix + ".mp4";
+            }
+            else
+            {
+                // Use the default mode, where the file names are expected to follow Nikon standard naming convention
+                command += " -start_number " + timelapseFileListStartIndex;
+                command += " -i " + "\"" + homeDirectory + "\\" + timelapseFileListPrefix + "_%04d.jpg\"";
+                fileName = timelapseFileListPrefix + "_" + timelapseFileListStartIndex + "_interval" + fileNameResPostfix + fileNameScaleCropPostfix + ".mp4";
+            }
 
-                    fileName = directory + "\\" + filePrefix + "_int" + fileNameResPostfix + fileNameScaleCropPostfix + ".mp4";
+            // Change pixel format to allow importing into premiere
+            command += " -pix_fmt yuv420p";
+
+            // Video filters
+            bool videoFiltersUsed = false;
+            if (cropW > 0 || cropH > 0)
+            {
+                if (targetAspect > sourceAspect)
+                {
+                    command += " -vf \"crop=" + "in_w" + ":" + "in_h*" + (sourceAspect / targetAspect).ToString();
                 }
                 else
                 {
-                    // Use the default mode, where the file names are expected to follow Nikon standard naming convention
-                    command += " -start_number " + timelapseFileListStartIndex;
-                    command += " -i " + "\"" + homeDirectory + "\\" + timelapseFileListPrefix + "_%04d.jpg\"";
-                    fileName = timelapseFileListPrefix + "_" + timelapseFileListStartIndex + "_interval" + fileNameResPostfix + fileNameScaleCropPostfix + ".mp4";
+                    command += " -vf \"crop=" + "in_w*" + (targetAspect / sourceAspect).ToString() + ":" + "in_h";
                 }
-
-                // Change pixel format to allow importing into premiere
-                command += " -pix_fmt yuv420p";
-
-                // Video filters
-                bool videoFiltersUsed = false;
-                if (cropW > 0 || cropH > 0)
-                {
-                    if (targetAspect > sourceAspect)
-                    {
-                        command += " -vf \"crop=" + "in_w" + ":" + "in_h*" + (sourceAspect / targetAspect).ToString();
-                    }
-                    else
-                    {
-                        command += " -vf \"crop=" + "in_w*" + (targetAspect / sourceAspect).ToString() + ":" + "in_h";
-                    }
-                    videoFiltersUsed = true;
-                    //command += " -filter:v \"crop = " + cropW.ToString() + ":" + cropH.ToString() + ":" + cropX.ToString() + ":" + cropY.ToString() + "\"";
-                }
-                // Add sharpening
-                if (checkBoxSharpen.Checked)
-                {
-                    if (!videoFiltersUsed)
-                    {
-                        command += " -vf \"unsharp=3:3:1.5";
-                        videoFiltersUsed = true;
-                    }
-                    else
-                    {
-                        command += ",unsharp=3:3:1.5";
-                    }
-                }
-                if (videoFiltersUsed) command += "\"";
-                command += " -s " + resX.ToString() + "x" + resY.ToString();
-                command += " -vcodec libx264";
-                command += " " + fileName;
-                logMessage(command);
-                ExecuteCommand(command, true);
+                videoFiltersUsed = true;
+                //command += " -filter:v \"crop = " + cropW.ToString() + ":" + cropH.ToString() + ":" + cropX.ToString() + ":" + cropY.ToString() + "\"";
             }
+            // Add sharpening
+            if (checkBoxSharpen.Checked)
+            {
+                if (!videoFiltersUsed)
+                {
+                    command += " -vf \"unsharp=3:3:1.5";
+                    videoFiltersUsed = true;
+                }
+                else
+                {
+                    command += ",unsharp=3:3:1.5";
+                }
+            }
+            if (videoFiltersUsed) command += "\"";
+            command += " -s " + resX.ToString() + "x" + resY.ToString();
+            command += " -vcodec libx264";
+            command += " " + fileName;
+            logMessage(command);
+            ExecuteCommand(command, waitForExit);
         }
 
         public void ExecuteCommand(string Command, bool waitForExit)
@@ -394,6 +411,7 @@ namespace FfmpegUtil
         {
             openFileDialog1.ShowDialog();
             selectedFileList = openFileDialog1.FileNames;
+            selectedDirectoryList = null;
             resetProjectFileList();
             logMessage(selectedFileList.Length + " files loaded");
         }
@@ -404,6 +422,8 @@ namespace FfmpegUtil
             if(folderBrowserDialog2.SelectedPath != null && folderBrowserDialog2.SelectedPath != "")
             {
                 selectedDirectoryList = System.IO.Directory.GetDirectories(folderBrowserDialog2.SelectedPath);
+                selectedFileList = null;
+                resetProjectFileList();
             }
         }
 
