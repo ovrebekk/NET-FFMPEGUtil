@@ -54,8 +54,10 @@
             this.label9 = new System.Windows.Forms.Label();
             this.textBoxResX = new System.Windows.Forms.TextBox();
             this.textBoxResY = new System.Windows.Forms.TextBox();
-            this.button1 = new System.Windows.Forms.Button();
+            this.buttonLoadFiles = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            this.buttonLoadDirectories = new System.Windows.Forms.Button();
+            this.folderBrowserDialog2 = new System.Windows.Forms.FolderBrowserDialog();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxPreview)).BeginInit();
             this.SuspendLayout();
@@ -351,16 +353,16 @@
             this.textBoxResY.Text = "720";
             this.textBoxResY.TextChanged += new System.EventHandler(this.textBoxResY_TextChanged);
             // 
-            // button1
+            // buttonLoadFiles
             // 
-            this.button1.Location = new System.Drawing.Point(108, 6);
-            this.button1.Margin = new System.Windows.Forms.Padding(2);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(98, 22);
-            this.button1.TabIndex = 25;
-            this.button1.Text = "Load Files";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.buttonLoadFiles.Location = new System.Drawing.Point(108, 6);
+            this.buttonLoadFiles.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonLoadFiles.Name = "buttonLoadFiles";
+            this.buttonLoadFiles.Size = new System.Drawing.Size(98, 22);
+            this.buttonLoadFiles.TabIndex = 25;
+            this.buttonLoadFiles.Text = "Load Files";
+            this.buttonLoadFiles.UseVisualStyleBackColor = true;
+            this.buttonLoadFiles.Click += new System.EventHandler(this.buttonLoadFiles_Click);
             // 
             // openFileDialog1
             // 
@@ -368,12 +370,24 @@
             this.openFileDialog1.Filter = "JPG files|*.jpg";
             this.openFileDialog1.Multiselect = true;
             // 
+            // buttonLoadDirectories
+            // 
+            this.buttonLoadDirectories.Location = new System.Drawing.Point(210, 6);
+            this.buttonLoadDirectories.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonLoadDirectories.Name = "buttonLoadDirectories";
+            this.buttonLoadDirectories.Size = new System.Drawing.Size(98, 22);
+            this.buttonLoadDirectories.TabIndex = 26;
+            this.buttonLoadDirectories.Text = "Load Directories";
+            this.buttonLoadDirectories.UseVisualStyleBackColor = true;
+            this.buttonLoadDirectories.Click += new System.EventHandler(this.buttonLoadDirectories_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(324, 423);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.buttonLoadDirectories);
+            this.Controls.Add(this.buttonLoadFiles);
             this.Controls.Add(this.textBoxResY);
             this.Controls.Add(this.textBoxResX);
             this.Controls.Add(this.labelFolder);
@@ -437,8 +451,10 @@
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.TextBox textBoxResX;
         private System.Windows.Forms.TextBox textBoxResY;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button buttonLoadFiles;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
+        private System.Windows.Forms.Button buttonLoadDirectories;
+        private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog2;
     }
 }
 
