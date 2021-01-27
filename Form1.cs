@@ -17,7 +17,12 @@ namespace FfmpegUtil
 {
     public partial class Form1 : Form
     {
-        string[] resolutionOptions = new string[] { "720p", "1080p", "2560x1440", "2560x1600", "4K", "Custom" };
+        OutResolutions[] resOptions = new OutResolutions[] {new OutResolutions( 1280, 720, "720p", "720p"),
+                                                            new OutResolutions( 1920, 1080, "1080p", "1080p"),
+                                                            new OutResolutions( 2560, 1440, "2560x1440", "1440p"),
+                                                            new OutResolutions( 2560, 1600, "2560x1600", "1600p"),
+                                                            new OutResolutions( 3840, 2160, "4K", "4K"),
+                                                            new OutResolutions( 0, 0, "Custom", "")};
         string homeDirectory;
         string[] fileList;
         string[] selectedFileList = null;
@@ -32,16 +37,16 @@ namespace FfmpegUtil
         public Form1(string[] args)
         {
             InitializeComponent();
-            foreach(string resType in resolutionOptions)
+            foreach(OutResolutions resType in resOptions)
             {
-                comboBoxResolution.Items.Add(resType);
+                comboBoxResolution.Items.Add(resType.comboBoxName);
             }
             comboBoxResolution.SelectedIndex = 1;
             comboBoxResolution.Select();
             comboBoxScaleCrop.SelectedIndex = 0;
             comboBoxScaleCrop.Select();
             comboBoxResolution_SelectedIndexChanged(this, null); // Call this to initialize the resolution variables
-            logMessage("Welcome Biatches");
+            logMessage("Welcome Friends!");
 
             resetProject(Directory.GetCurrentDirectory());
 
@@ -76,6 +81,8 @@ namespace FfmpegUtil
             customCulture.NumberFormat.NumberDecimalSeparator = ".";
 
             System.Threading.Thread.CurrentThread.CurrentCulture = customCulture;
+
+            setOutFileName();
 
             // Run automode if the argument is present
             if (autoMode)
@@ -226,11 +233,9 @@ namespace FfmpegUtil
                         // Make sure resolution is divisible by two
                         resY &= ~1;
                     }
-                    fileNameScaleCropPostfix = "";
                     break;
                 // Stretch to fit
                 case 1:
-                    fileNameScaleCropPostfix = "_s";
                     break;
                 // Crop to fit
                 case 2:
@@ -246,7 +251,6 @@ namespace FfmpegUtil
                         cropX = 0;
                         cropY = 0;
                     }
-                    fileNameScaleCropPostfix = "_c";
                     break;
                 // Scale to fit outside
                 case 3:
@@ -262,10 +266,8 @@ namespace FfmpegUtil
                         // Make sure resolution is divisible by two
                         resX &= ~1;
                     }
-                    fileNameScaleCropPostfix = "_o";
                     break;
                 default:
-                    fileNameScaleCropPostfix = "";
                     break;
             }
 
@@ -276,12 +278,11 @@ namespace FfmpegUtil
                     prepareFfmpegCommand(directory, null, true);
                 }
             }
-            else prepareFfmpegCommand(null, selectedFileList, false);
+            else prepareFfmpegCommand(homeDirectory, selectedFileList, false);
         }
 
         public void prepareFfmpegCommand(string fileDirectory, string [] fileList, bool waitForExit)
         { 
-            string fileName;
             string command = "ffmpeg";
             command += " -r " + numericUpDown1.Value.ToString();
             if (fileList != null) selectedFileList = fileList;
@@ -310,16 +311,12 @@ namespace FfmpegUtil
 
                 // Configure ffmpeg to use the file list
                 command += " -f concat -safe 0 -i " + inputFileName;
-                string filePrefix = Path.GetFileNameWithoutExtension(selectedFileList[0]);
-
-                fileName = fileDirectory + "\\" + filePrefix + "_int" + fileNameResPostfix + fileNameScaleCropPostfix + ".mp4";
             }
             else
             {
                 // Use the default mode, where the file names are expected to follow Nikon standard naming convention
                 command += " -start_number " + timelapseFileListStartIndex;
-                command += " -i " + "\"" + homeDirectory + "\\" + timelapseFileListPrefix + "_%04d.jpg\"";
-                fileName = timelapseFileListPrefix + "_" + timelapseFileListStartIndex + "_interval" + fileNameResPostfix + fileNameScaleCropPostfix + ".mp4";
+                command += " -i " + "\"" + fileDirectory + "\\" + timelapseFileListPrefix + "_%04d.jpg\"";
             }
 
             // Change pixel format to allow importing into premiere
@@ -356,7 +353,7 @@ namespace FfmpegUtil
             if (videoFiltersUsed) command += "\"";
             command += " -s " + resX.ToString() + "x" + resY.ToString();
             command += " -vcodec libx264";
-            command += " " + fileName;
+            command += " \"" + fileDirectory + "\\" + textBoxOutFileName.Text + "\"";
             logMessage(command);
             ExecuteCommand(command, waitForExit);
         }
@@ -381,7 +378,8 @@ namespace FfmpegUtil
             {
                 if(Int32.TryParse(textBoxResX.Text, out resX))
                 {
-                    fileNameResPostfix = "_" + resX.ToString() + "x" + resY.ToString();
+                    fileNameResPostfix = resX.ToString() + "x" + resY.ToString();
+                    setOutFileName();
                 }
             }
         }
@@ -392,17 +390,23 @@ namespace FfmpegUtil
             {
                 if (Int32.TryParse(textBoxResY.Text, out resY))
                 {
-                    fileNameResPostfix = "_" + resX.ToString() + "x" + resY.ToString();
+                    fileNameResPostfix = resX.ToString() + "x" + resY.ToString();
+                    setOutFileName();
                 }
             }
         }
 
         private void comboBoxScaleCrop_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            setOutFileName();
         }
 
         private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+            setOutFileName();
+        }
+
+        private void checkBoxSharpen_CheckedChanged(object sender, EventArgs e)
         {
 
         }
@@ -434,49 +438,55 @@ namespace FfmpegUtil
             {
                 resetProject(folderBrowserDialog1.SelectedPath);
                 selectedFileList = null;
+                setOutFileName();
             }
         }
 
         private void comboBoxResolution_SelectedIndexChanged(object sender, EventArgs e)
         {
             bool customTextBoxesEnabled = false;
-            switch (comboBoxResolution.SelectedIndex)
+            if(comboBoxResolution.SelectedIndex < (comboBoxResolution.Items.Count - 1))
             {
-                case 0:
-                    resX = 1280;
-                    resY = 720;
-                    fileNameResPostfix = "_720p";
-                    break;
-                case 1:
-                    resX = 1920;
-                    resY = 1080;
-                    fileNameResPostfix = "_1080p";
-                    break;
-                case 2:
-                    resX = 2560;
-                    resY = 1440;
-                    fileNameResPostfix = "_1440p";
-                    break;
-                case 3:
-                    resX = 2560;
-                    resY = 1600;
-                    fileNameResPostfix = "_1600p";
-                    break;
-                case 4:
-                    resX = 3840;
-                    resY = 2160;
-                    fileNameResPostfix = "_4k";
-                    break;
-                case 5:
-                    customTextBoxesEnabled = true;
-                    fileNameResPostfix = "";
-                    break;
-                default:
-                    break;
+                resX = resOptions[comboBoxResolution.SelectedIndex].resX;
+                resY = resOptions[comboBoxResolution.SelectedIndex].resY;
+                fileNameResPostfix = resOptions[comboBoxResolution.SelectedIndex].filePostfixName;
+            }
+            else
+            {
+                customTextBoxesEnabled = true;
+                if (Int32.TryParse(textBoxResX.Text, out resX) && Int32.TryParse(textBoxResY.Text, out resY))
+                {
+                    fileNameResPostfix = resX.ToString() + "x" + resY.ToString();
+                }
+                else fileNameResPostfix = "";
             }
             textBoxResX.Text = resX.ToString();
             textBoxResY.Text = resY.ToString();
             textBoxResX.Enabled = textBoxResY.Enabled = customTextBoxesEnabled;
+            setOutFileName();
+        }
+
+        public void setOutFileName()
+        {
+            switch (comboBoxScaleCrop.SelectedIndex)
+            {
+                case 0:
+                    fileNameScaleCropPostfix = "fi";
+                    break;
+                case 1:
+                    fileNameScaleCropPostfix = "s";
+                    break;
+                case 2:
+                    fileNameScaleCropPostfix = "c";
+                    break;
+                case 3:
+                    fileNameScaleCropPostfix = "fo";
+                    break;
+                default:
+                    fileNameScaleCropPostfix = "";
+                    break;
+            }
+            textBoxOutFileName.Text = timelapseFileListPrefix + "_" + timelapseFileListStartIndex + "_interval_" + fileNameResPostfix + "_" + numericUpDown1.Value.ToString() + "f_" + fileNameScaleCropPostfix + ".mp4";
         }
     }
 
@@ -487,5 +497,21 @@ namespace FfmpegUtil
         public string FilePrefix;
         public string FileName;
 
+    }
+
+    public class OutResolutions
+    {
+        public int resX;
+        public int resY;
+        public string comboBoxName;
+        public string filePostfixName;
+
+        public OutResolutions(int x, int y, string cName, string pfName)
+        {
+            resX = x;
+            resY = y;
+            comboBoxName = cName;
+            filePostfixName = pfName;
+        }
     }
 }

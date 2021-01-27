@@ -58,6 +58,8 @@
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.buttonLoadDirectories = new System.Windows.Forms.Button();
             this.folderBrowserDialog2 = new System.Windows.Forms.FolderBrowserDialog();
+            this.label7 = new System.Windows.Forms.Label();
+            this.textBoxOutFileName = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxPreview)).BeginInit();
             this.SuspendLayout();
@@ -94,6 +96,7 @@
             this.checkBoxSharpen.Size = new System.Drawing.Size(15, 14);
             this.checkBoxSharpen.TabIndex = 2;
             this.checkBoxSharpen.UseVisualStyleBackColor = true;
+            this.checkBoxSharpen.CheckedChanged += new System.EventHandler(this.checkBoxSharpen_CheckedChanged);
             // 
             // label2
             // 
@@ -108,7 +111,7 @@
             // 
             // buttonGenerateVideo
             // 
-            this.buttonGenerateVideo.Location = new System.Drawing.Point(6, 383);
+            this.buttonGenerateVideo.Location = new System.Drawing.Point(6, 390);
             this.buttonGenerateVideo.Margin = new System.Windows.Forms.Padding(2);
             this.buttonGenerateVideo.Name = "buttonGenerateVideo";
             this.buttonGenerateVideo.Size = new System.Drawing.Size(232, 29);
@@ -154,7 +157,7 @@
             // 
             // textBoxLog
             // 
-            this.textBoxLog.Location = new System.Drawing.Point(6, 272);
+            this.textBoxLog.Location = new System.Drawing.Point(6, 279);
             this.textBoxLog.Margin = new System.Windows.Forms.Padding(2);
             this.textBoxLog.Name = "textBoxLog";
             this.textBoxLog.Size = new System.Drawing.Size(313, 108);
@@ -281,7 +284,7 @@
             this.checkBoxAutoClose.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.checkBoxAutoClose.Checked = true;
             this.checkBoxAutoClose.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBoxAutoClose.Location = new System.Drawing.Point(242, 391);
+            this.checkBoxAutoClose.Location = new System.Drawing.Point(242, 398);
             this.checkBoxAutoClose.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxAutoClose.Name = "checkBoxAutoClose";
             this.checkBoxAutoClose.Size = new System.Drawing.Size(74, 17);
@@ -316,7 +319,7 @@
             this.labelFolder.Location = new System.Drawing.Point(94, 233);
             this.labelFolder.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.labelFolder.Name = "labelFolder";
-            this.labelFolder.Size = new System.Drawing.Size(224, 37);
+            this.labelFolder.Size = new System.Drawing.Size(225, 13);
             this.labelFolder.TabIndex = 22;
             this.labelFolder.Text = "test";
             // 
@@ -381,11 +384,31 @@
             this.buttonLoadDirectories.UseVisualStyleBackColor = true;
             this.buttonLoadDirectories.Click += new System.EventHandler(this.buttonLoadDirectories_Click);
             // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Font = new System.Drawing.Font("Lato", 7.875F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label7.Location = new System.Drawing.Point(4, 258);
+            this.label7.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(85, 13);
+            this.label7.TabIndex = 27;
+            this.label7.Text = "Output file name";
+            // 
+            // textBoxOutFileName
+            // 
+            this.textBoxOutFileName.Location = new System.Drawing.Point(96, 254);
+            this.textBoxOutFileName.Name = "textBoxOutFileName";
+            this.textBoxOutFileName.Size = new System.Drawing.Size(223, 20);
+            this.textBoxOutFileName.TabIndex = 28;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(324, 423);
+            this.ClientSize = new System.Drawing.Size(324, 426);
+            this.Controls.Add(this.textBoxOutFileName);
+            this.Controls.Add(this.label7);
             this.Controls.Add(this.buttonLoadDirectories);
             this.Controls.Add(this.buttonLoadFiles);
             this.Controls.Add(this.textBoxResY);
@@ -455,6 +478,8 @@
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
         private System.Windows.Forms.Button buttonLoadDirectories;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog2;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.TextBox textBoxOutFileName;
     }
 }
 
